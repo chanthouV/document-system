@@ -27,6 +27,7 @@ RUN printf '<Directory /var/www/html/public>\n\
 WORKDIR /var/www/html
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+COPY . /var/www/html
 
 COPY composer.json composer.lock ./
 RUN composer install --no-interaction --no-dev --optimize-autoloader
