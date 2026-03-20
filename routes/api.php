@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\FoldersController;
 use App\Http\Controllers\DocumentsController;
+use App\Http\Controllers\HealthController;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,6 +20,10 @@ use App\Http\Controllers\DocumentsController;
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/test', [DocumentsController::class, 'test']); // Test route outside auth
+
+// Health check endpoints (no authentication required)
+Route::get('/health', [HealthController::class, 'index']);
+Route::get('/ping', [HealthController::class, 'ping']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'user']);

@@ -1,28 +1,19 @@
 FROM php:8.2-apache
 
-# Install system dependencies and PHP extensions
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
     curl \
     libzip-dev \
+    libpq-dev \
     libonig-dev \
     libxml2-dev \
-    libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
-    && docker-php-ext-install \
-        zip \
-        pdo_mysql \
-        gd \
-        bcmath \
+    && docker-php-ext-install zip pdo_mysql pdo_pgsql \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Enable Apache modules
-RUN a2enmod rewrite headers
+RUN a2enmod rewrite
 
-# Configure Apache for Laravel
 RUN sed -ri -e 's!/var/www/html!/var/www/html/public!g' \
     /etc/apache2/sites-available/*.conf \
     /etc/apache2/apache2.conf
@@ -33,19 +24,15 @@ RUN printf '<Directory /var/www/html/public>\n\
 </Directory>\n' > /etc/apache2/conf-available/laravel.conf \
     && a2enconf laravel
 
-# Set working directory
 WORKDIR /var/www/html
 
-# Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Copy application files
-COPY . .
-
-# Install PHP dependencies
+COPY composer.json composer.lock ./
 RUN composer install --no-interaction --no-dev --optimize-autoloader
 
-# Create necessary directories
+COPY . /var/www/html
+
 RUN mkdir -p \
     storage/framework/sessions \
     storage/framework/views \
@@ -53,15 +40,14 @@ RUN mkdir -p \
     storage/logs \
     bootstrap/cache
 
-# Set proper permissions
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 775 storage bootstrap/cache
 
-# Create startup script
 RUN printf '#!/bin/bash\n\
 set -e\n\
 echo "Clearing Laravel caches..."\n\
 php artisan optimize:clear\n\
+php artisan config:clear\n\
 if [ "$RUN_FRESH_MIGRATION" = "true" ]; then\n\
   echo "Running fresh migration with seed..."\n\
   php artisan migrate:fresh --seed --force\n\
